@@ -9,12 +9,13 @@ import coop.com.unicampo.enviaemail.Main;
 import coop.com.unicampo.enviaemail.model.Email;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author DBS
  */
-public class EmailController {
+public class EmailController {   
 
     public static Email getEmail(Integer sequenciaEmail) {
         Email email = new Email();

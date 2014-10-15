@@ -9,13 +9,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author DBS
  */
 public class EmailConverter {
-
+        
     public static Map<String, String> stringToMap(String string, String caracterToSplit) {
 
         Map<String, String> map = new HashMap<>();

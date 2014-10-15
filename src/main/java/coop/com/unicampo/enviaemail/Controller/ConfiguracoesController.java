@@ -8,13 +8,14 @@ package coop.com.unicampo.enviaemail.Controller;
 import coop.com.unicampo.enviaemail.Main;
 import coop.com.unicampo.enviaemail.model.Configuracoes;
 import javax.persistence.Query;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author DBS
  */
 public class ConfiguracoesController {
-
+   
     public static Configuracoes getConfiguracaoAtiva() {
 
         Configuracoes config = new Configuracoes();

@@ -11,7 +11,6 @@ import coop.com.unicampo.enviaemail.Converter.EmailConverter;
 import coop.com.unicampo.enviaemail.model.Configuracoes;
 import coop.com.unicampo.enviaemail.model.Email;
 import coop.com.unicampo.enviaemail.model.EntityManagerDAO;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -29,12 +28,15 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.persistence.EntityManager;
+import org.apache.log4j.Logger;
 
 /**
  *
  * @author DBS
  */
 public class Main {
+
+    private static Logger log = Logger.getLogger(Main.class);
 
     public static EntityManager em;
     private static String host;
@@ -48,14 +50,16 @@ public class Main {
     private static String subject;
     private static String body;
 
-    public static void main(String[] args) throws UnsupportedEncodingException {
+    public static void main(String[] args) {
 
         try {
+            log.info("Buscando Configurações.");
             em = EntityManagerDAO.getEntityManager();
             Configuracoes config = ConfiguracoesController.getConfiguracaoAtiva();
             host = config.getHost();
             porta = config.getPorta();
 
+            log.info("Buscando Email.");
             Email email = EmailController.getEmail(Integer.parseInt(args[0]));
             to = EmailConverter.stringToMap(email.getTo(), ";");
             if (email.getCc() != null) {
@@ -71,7 +75,8 @@ public class Main {
             password = email.getPassword();
             subject = email.getSubject();
             body = email.getBody();
-
+                
+            log.info("Configurando SMTP");
             Properties properties = System.getProperties();
             properties.put("mail.smtp.host", host);
             properties.put("mail.smtp.port", porta);
@@ -90,12 +95,13 @@ public class Main {
                     public PasswordAuthentication getPasswordAuthentication() {
                         return pa;
                     }
-                };
+                };                
                 session = Session.getDefaultInstance(properties, authenticator);
             } else {
                 session = Session.getDefaultInstance(properties);
             }
-
+            
+            log.info("Montando Mensagem: "+email.getId());    
             MimeMessage message = new MimeMessage(session);
 
             message.setFrom(new InternetAddress(from));
@@ -145,15 +151,23 @@ public class Main {
             mp.addBodyPart(bodyPart);
             message.setContent(mp);
 
+            log.info("Enviando: "+ email.getId());
             Transport.send(message);
 
-            EmailController.updateEmail(email);
-            System.out.println("Sent message successfully....");
+            EmailController.updateEmail(email);            
+            
+            log.info("Mensagem Enviada: "+email.getId());
 
         } catch (NumberFormatException | IndexOutOfBoundsException ex) {
+            log.error("HELP: call instructions:"+
+                    "java -jar [ProjectHome]/EnviaEmail.jar [Email.id[Integer]]");
             ex.printStackTrace();
         } catch (MessagingException mex) {
+            log.error(mex);
             mex.printStackTrace();
+        }catch(Exception ex){
+            log.error(ex);
+            ex.printStackTrace();
         }
 
     }
