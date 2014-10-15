@@ -6,11 +6,12 @@
 package coop.com.unicampo.enviaemail;
 
 import coop.com.unicampo.enviaemail.Controller.ConfiguracoesController;
+import coop.com.unicampo.enviaemail.Controller.EmailController;
+import coop.com.unicampo.enviaemail.Converter.EmailConverter;
 import coop.com.unicampo.enviaemail.model.Configuracoes;
+import coop.com.unicampo.enviaemail.model.Email;
 import coop.com.unicampo.enviaemail.model.EntityManagerDAO;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -38,66 +39,88 @@ public class Main {
     public static EntityManager em;
     private static String host;
     private static Integer porta;
+    private static Map<String, String> to;
+    private static Map<String, String> cc;
+    private static Map<String, String> cco;
+    private static List<String> anexo;
+    private static String from;
+    private static String password;
+    private static String subject;
+    private static String body;
 
     public static void main(String[] args) throws UnsupportedEncodingException {
-        
-        em = EntityManagerDAO.getEntityManager();
-        Configuracoes config =  ConfiguracoesController.getConfiguracaoAtiva();
-        host = config.getHost();
-        porta = config.getPorta();
-        
-        Map<String, String> toUsers = new HashMap<>();
-        toUsers.put("leandro@dbsti.com.br", "Leandro Franciscato");
-        toUsers.put("leandro_franciscato@hotmail.com", "Leandro Franciscato Hot");
-
-        final String from = "beneficios@unicampo.coop.br";                
-
-        List<String> pathAnexos = new ArrayList<>();
-        pathAnexos.add("C:\\Users\\DBS\\Desktop\\2661.pdf");
-        pathAnexos.add("C:\\Users\\DBS\\Desktop\\2661 - Cópia.pdf");
-
-        Properties properties = System.getProperties();
-
-        properties.put("mail.smtp.host", host);
-        properties.put("mail.smtp.port", porta);
-        properties.put("mail.smtp.ssl.enable", false);
-        properties.put("mail.smtp.starttls.enable", false);
-        properties.put("mail.smtp.auth", false);
-        properties.put("mail.smtp.ssl.trust", "*");
-
-        Session session = null;
-        Authenticator authenticator = null;
-        if ((boolean) properties.get("mail.smtp.auth") == true) {
-            authenticator = new Authenticator() {
-                private PasswordAuthentication pa = new PasswordAuthentication(from, "inativos25");
-
-                @Override
-                public PasswordAuthentication getPasswordAuthentication() {
-                    return pa;
-                }
-            };
-            session = Session.getDefaultInstance(properties, authenticator);
-        } else {
-            session = Session.getDefaultInstance(properties);
-        }
 
         try {
+            em = EntityManagerDAO.getEntityManager();
+            Configuracoes config = ConfiguracoesController.getConfiguracaoAtiva();
+            host = config.getHost();
+            porta = config.getPorta();
+
+            Email email = EmailController.getEmail(Integer.parseInt(args[0]));
+            to = EmailConverter.stringToMap(email.getTo(), ";");
+            if (email.getCc() != null) {
+                cc = EmailConverter.stringToMap(email.getCc(), ";");
+            }
+            if (email.getCco() != null) {
+                cco = EmailConverter.stringToMap(email.getCco(), ";");
+            }
+            if (email.getAnexo() != null) {
+                anexo = EmailConverter.stringToList(email.getAnexo(), ";");
+            }
+            from = email.getFrom();
+            password = email.getPassword();
+            subject = email.getSubject();
+            body = email.getBody();
+
+            Properties properties = System.getProperties();
+            properties.put("mail.smtp.host", host);
+            properties.put("mail.smtp.port", porta);
+            properties.put("mail.smtp.ssl.enable", ("SSL".equals(config.getDescricaoDaConexao())));
+            properties.put("mail.smtp.starttls.enable", ("TLS".equals(config.getDescricaoDaConexao())));
+            properties.put("mail.smtp.auth", (!"NENHUM".equals(config.getDescricaoDaConexao())));
+            properties.put("mail.smtp.ssl.trust", "*");
+
+            Session session = null;
+            Authenticator authenticator = null;
+            if ((boolean) properties.get("mail.smtp.auth") == true) {
+                authenticator = new Authenticator() {
+                    private PasswordAuthentication pa = new PasswordAuthentication(from, password);
+
+                    @Override
+                    public PasswordAuthentication getPasswordAuthentication() {
+                        return pa;
+                    }
+                };
+                session = Session.getDefaultInstance(properties, authenticator);
+            } else {
+                session = Session.getDefaultInstance(properties);
+            }
+
             MimeMessage message = new MimeMessage(session);
 
             message.setFrom(new InternetAddress(from));
-            message.setSubject("This is the Subject Line!");
+            message.setSubject(subject);
 
-            //To
-            Boolean first = true;
-            for (Map.Entry<String, String> map : toUsers.entrySet()) {
-                if (first) {
-                    message.addRecipient(Message.RecipientType.TO,
+            //To            
+            for (Map.Entry<String, String> map : to.entrySet()) {
+                message.addRecipient(Message.RecipientType.TO,
+                        new InternetAddress(map.getKey(), map.getValue())
+                );
+            }
+
+            //CC
+            if (cc != null) {
+                for (Map.Entry<String, String> map : cc.entrySet()) {
+                    message.addRecipient(Message.RecipientType.CC,
                             new InternetAddress(map.getKey(), map.getValue())
                     );
+                }
+            }
 
-                    first = false;
-                } else {
-                    message.addRecipient(Message.RecipientType.CC,
+            //CCO                        
+            if (cco != null) {
+                for (Map.Entry<String, String> map : cco.entrySet()) {
+                    message.addRecipient(Message.RecipientType.BCC,
                             new InternetAddress(map.getKey(), map.getValue())
                     );
                 }
@@ -105,24 +128,30 @@ public class Main {
 
             //Anexo
             Multipart mp = new MimeMultipart();
-            for (int index = 0; index < pathAnexos.size(); index++) {
-                MimeBodyPart mbp = new MimeBodyPart();
-                FileDataSource fds = new FileDataSource(pathAnexos.get(index));
-                mbp.setDataHandler(new DataHandler(fds));
-                mbp.setFileName(fds.getName());
+            if (anexo != null) {
+                for (int index = 0; index < anexo.size(); index++) {
+                    MimeBodyPart mbp = new MimeBodyPart();
+                    FileDataSource fds = new FileDataSource(anexo.get(index));
+                    mbp.setDataHandler(new DataHandler(fds));
+                    mbp.setFileName(fds.getName());
 
-                mp.addBodyPart(mbp, index);
+                    mp.addBodyPart(mbp, index);
+                }
             }
 
             // Corpo
             MimeBodyPart bodyPart = new MimeBodyPart();
-            bodyPart.setContent("<h1>This is actual message</h1>", "text/html");
+            bodyPart.setContent(body, "text/html");
             mp.addBodyPart(bodyPart);
             message.setContent(mp);
 
             Transport.send(message);
+
+            EmailController.updateEmail(email);
             System.out.println("Sent message successfully....");
 
+        } catch (NumberFormatException | IndexOutOfBoundsException ex) {
+            ex.printStackTrace();
         } catch (MessagingException mex) {
             mex.printStackTrace();
         }

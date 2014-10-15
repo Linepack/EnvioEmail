@@ -3,6 +3,7 @@
   <persistence-unit name="db" transaction-type="RESOURCE_LOCAL">
     <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
     <class>coop.com.unicampo.enviaemail.model.Configuracoes</class>
+    <class>coop.com.unicampo.enviaemail.model.Email</class>
     <properties>
       <property name="javax.persistence.jdbc.url" value="jdbc:oracle:thin:@192.168.1.200:1521:UNICOOP"/>
       <property name="javax.persistence.jdbc.user" value="UNICAMPO"/>
