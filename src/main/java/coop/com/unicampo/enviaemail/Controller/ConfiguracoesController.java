@@ -29,5 +29,19 @@ public class ConfiguracoesController {
         return config;
 
     }
+    
+    public static Configuracoes getConfiguracaoPerID(Integer id) {
+
+        Configuracoes config = new Configuracoes();
+        Query query = Main.em.createQuery("select c "
+                + "   from GEMASMTP c "
+                + "  where c.id = "+ id);
+        for (Object o : query.getResultList()) {
+            config = (Configuracoes) o;
+        }
+
+        return config;
+
+    }
 
 }

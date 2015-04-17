@@ -49,13 +49,28 @@ public class Main {
     private static String password;
     private static String subject;
     private static String body;
+    private static Integer configuracaoID;
 
     public static void main(String[] args) {
 
         try {
+            configuracaoID = Integer.parseInt(args[1]);
+        } catch (Exception e) {
+            configuracaoID = 0;
+        }
+
+        try {
             log.info("Buscando Configurações.");
             em = EntityManagerDAO.getEntityManager();
-            Configuracoes config = ConfiguracoesController.getConfiguracaoAtiva();
+
+            Configuracoes config;
+
+            if (configuracaoID == 0) {
+                config = ConfiguracoesController.getConfiguracaoAtiva();
+            } else {
+                config = ConfiguracoesController.getConfiguracaoPerID(configuracaoID);
+            }
+
             host = config.getHost();
             porta = config.getPorta();
 
@@ -75,7 +90,7 @@ public class Main {
             password = email.getPassword();
             subject = email.getSubject();
             body = email.getBody();
-                
+
             log.info("Configurando SMTP");
             Properties properties = System.getProperties();
             properties.put("mail.smtp.host", host);
@@ -83,6 +98,7 @@ public class Main {
             properties.put("mail.smtp.ssl.enable", ("SSL".equals(config.getDescricaoDaConexao())));
             properties.put("mail.smtp.starttls.enable", ("TLS".equals(config.getDescricaoDaConexao())));
             properties.put("mail.smtp.auth", (!"NENHUM".equals(config.getDescricaoDaConexao())));
+
             properties.put("mail.smtp.ssl.trust", "*");
 
             Session session = null;
@@ -95,13 +111,13 @@ public class Main {
                     public PasswordAuthentication getPasswordAuthentication() {
                         return pa;
                     }
-                };                
+                };
                 session = Session.getDefaultInstance(properties, authenticator);
             } else {
                 session = Session.getDefaultInstance(properties);
             }
-            
-            log.info("Montando Mensagem: "+email.getId());    
+
+            log.info("Montando Mensagem: " + email.getId());
             MimeMessage message = new MimeMessage(session);
 
             message.setFrom(new InternetAddress(from));
@@ -151,21 +167,21 @@ public class Main {
             mp.addBodyPart(bodyPart);
             message.setContent(mp);
 
-            log.info("Enviando: "+ email.getId());
+            log.info("Enviando: " + email.getId());
             Transport.send(message);
 
-            EmailController.updateEmail(email);            
-            
-            log.info("Mensagem Enviada: "+email.getId());
+            EmailController.updateEmail(email);
+
+            log.info("Mensagem Enviada: " + email.getId());
 
         } catch (NumberFormatException | IndexOutOfBoundsException ex) {
-            log.error("HELP: call instructions:"+
-                    "java -jar [ProjectHome]/EnviaEmail.jar [Email.id[Integer]]");
+            log.error("HELP: call instructions:"
+                    + "java -jar [ProjectHome]/EnviaEmail.jar [Email.id[Integer] Configuracoes.id[Integer]]");
             ex.printStackTrace();
         } catch (MessagingException mex) {
             log.error(mex);
             mex.printStackTrace();
-        }catch(Exception ex){
+        } catch (Exception ex) {
             log.error(ex);
             ex.printStackTrace();
         }

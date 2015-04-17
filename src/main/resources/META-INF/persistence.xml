@@ -5,10 +5,10 @@
     <class>coop.com.unicampo.enviaemail.model.Configuracoes</class>
     <class>coop.com.unicampo.enviaemail.model.Email</class>
     <properties>
-      <property name="javax.persistence.jdbc.url" value="jdbc:oracle:thin:@192.168.1.200:1521:UNICOOP"/>
-      <property name="javax.persistence.jdbc.user" value="UNICAMPO"/>
+      <property name="javax.persistence.jdbc.url" value="jdbc:oracle:thin:@192.168.1.200:1521:unicoop"/>
+      <property name="javax.persistence.jdbc.user" value="unicampo"/>
       <property name="javax.persistence.jdbc.driver" value="oracle.jdbc.OracleDriver"/>
-      <property name="javax.persistence.jdbc.password" value="UNICAMPO"/>
+      <property name="javax.persistence.jdbc.password" value="saladao"/>
     </properties>
   </persistence-unit>
 </persistence>
