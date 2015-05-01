@@ -11,9 +11,14 @@ import coop.com.unicampo.enviaemail.Converter.EmailConverter;
 import coop.com.unicampo.enviaemail.model.Configuracoes;
 import coop.com.unicampo.enviaemail.model.Email;
 import coop.com.unicampo.enviaemail.model.EntityManagerDAO;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Level;
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
 import javax.mail.Authenticator;
@@ -32,7 +37,7 @@ import org.apache.log4j.Logger;
 
 /**
  *
- * @author DBS
+ * @author Franciscato
  */
 public class Main {
 
@@ -49,33 +54,50 @@ public class Main {
     private static String password;
     private static String subject;
     private static String body;
-    private static Integer configuracaoID;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        
+        Timer timer = null;
+        if (timer == null) {
+            timer = new Timer();
+            TimerTask tarefa;
+            tarefa = new TimerTask() {
 
-        try {
-            configuracaoID = Integer.parseInt(args[1]);
-        } catch (Exception e) {
-            configuracaoID = 0;
+                @Override
+                public void run() {                    
+                    
+                    List<Email> emails = new ArrayList<>();
+                    
+                    em = EntityManagerDAO.getEntityManager();
+                    emails.addAll(EmailController.getEmailsNotSend());
+
+                    for (Email email : emails) {
+                        enviaEmail(email.getId(), email.getCodigoConfiguracao());
+                    }
+
+                }
+            };
+            timer.scheduleAtFixedRate(tarefa, 5000, 5000);
         }
+    }
+
+    public static void enviaEmail(Integer id, Integer codigoConfiguracao) {
 
         try {
             log.info("Buscando Configurações.");
-            em = EntityManagerDAO.getEntityManager();
-
             Configuracoes config;
 
-            if (configuracaoID == 0) {
+            if (codigoConfiguracao == null) {
                 config = ConfiguracoesController.getConfiguracaoAtiva();
             } else {
-                config = ConfiguracoesController.getConfiguracaoPerID(configuracaoID);
+                config = ConfiguracoesController.getConfiguracaoPerID(codigoConfiguracao);
             }
 
             host = config.getHost();
             porta = config.getPorta();
 
             log.info("Buscando Email.");
-            Email email = EmailController.getEmail(Integer.parseInt(args[0]));
+            Email email = EmailController.getEmailPerID(id);
             to = EmailConverter.stringToMap(email.getTo(), ";");
             if (email.getCc() != null) {
                 cc = EmailConverter.stringToMap(email.getCc(), ";");
@@ -168,11 +190,14 @@ public class Main {
             message.setContent(mp);
 
             log.info("Enviando: " + email.getId());
-            Transport.send(message);
-
-            EmailController.updateEmail(email);
-
-            log.info("Mensagem Enviada: " + email.getId());
+            try {
+                Transport.send(message);
+                EmailController.updateEmail(email, 1, null);
+                log.info("Mensagem Enviada: " + email.getId());
+            } catch (MessagingException mex) {
+                EmailController.updateEmail(email, 0, mex.getMessage());
+                log.info("Mensagem NÃO Enviada: " + email.getId());
+            }
 
         } catch (NumberFormatException | IndexOutOfBoundsException ex) {
             log.error("HELP: call instructions:"

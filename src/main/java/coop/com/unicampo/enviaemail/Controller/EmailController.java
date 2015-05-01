@@ -9,24 +9,42 @@ import coop.com.unicampo.enviaemail.Main;
 import coop.com.unicampo.enviaemail.model.Email;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import org.apache.log4j.Logger;
+import java.util.ArrayList;
+import java.util.List;
+import javax.persistence.Query;
 
 /**
  *
  * @author DBS
  */
-public class EmailController {   
+public class EmailController {
 
-    public static Email getEmail(Integer sequenciaEmail) {
+    public static Email getEmailPerID(Integer sequenciaEmail) {
+                
         Email email = new Email();
         email = Main.em.find(Email.class, sequenciaEmail);
 
         return email;
     }
 
-    public static void updateEmail(Email email) {
+    public static List<Email> getEmailsNotSend() {
 
-        email.setIsEnviado(1);
+        List<Email> emails = new ArrayList<>();
+        Query query = Main.em.createQuery("select e"
+                + " from GEEMAIL e"
+                + " where e.isEnviado = 0"
+                + " and e.numeroDeTentativas < 3"
+                + " and e.mensagemDeErro is null");
+        for (Object emailObject : query.getResultList()){
+            emails.add((Email) emailObject);
+        }
+
+        return emails;
+    }
+
+    public static void updateEmail(Email email, Integer enviado, String mensagemErro) {
+                        
+        email.setIsEnviado(enviado);
 
         String hostName;
         String ip;
@@ -42,7 +60,28 @@ public class EmailController {
 
         email.setPc(hostName);
         email.setIp(ip);
-        Main.em.getTransaction().commit();
+        if (mensagemErro != null){
+            email.setMensagemDeErro(mensagemErro);
+        }
+        email.setNumeroDeTentativas(email.getNumeroDeTentativas()+1);    
+        
+        if (enviado == 1){
+           email.setPassword("0");
+        }else{
+            if (email.getNumeroDeTentativas() > 3){
+                email.setPassword("0");
+            }else{
+                if (email.getMensagemDeErro() != null){
+                    email.setPassword("0");
+                }
+            }
+                
+        }
+        
+        if (!Main.em.getTransaction().isActive()){
+            Main.em.getTransaction().begin();
+        }
+        Main.em.getTransaction().commit();        
+        
     }
-
 }

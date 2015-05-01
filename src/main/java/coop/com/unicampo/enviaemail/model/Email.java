@@ -58,6 +58,41 @@ public class Email implements Serializable {
     @Column(name = "DS_IP")
     private String ip;
 
+    @Column(name = "SQ_SMTP")
+    private Integer codigoConfiguracao;
+
+    @Column(name = "NR_TENTATIVAS")
+    private Integer numeroDeTentativas;
+    
+    @Column(name = "DS_MENSAGEM_ERRO")
+    private String mensagemDeErro;
+
+    public String getMensagemDeErro() {
+        return mensagemDeErro;
+    }
+
+    public void setMensagemDeErro(String mensagemDeErro) {
+        this.mensagemDeErro = mensagemDeErro;
+    }
+    
+    
+
+    public Integer getCodigoConfiguracao() {
+        return codigoConfiguracao;
+    }
+
+    public void setCodigoConfiguracao(Integer codigoConfiguracao) {
+        this.codigoConfiguracao = codigoConfiguracao;
+    }
+
+    public Integer getNumeroDeTentativas() {
+        return numeroDeTentativas;
+    }
+
+    public void setNumeroDeTentativas(Integer numeroDeTentativas) {
+        this.numeroDeTentativas = numeroDeTentativas;
+    }
+
     public String getPc() {
         return pc;
     }
