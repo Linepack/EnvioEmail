@@ -34,7 +34,8 @@ public class EmailController {
                 + " from GEEMAIL e"
                 + " where e.isEnviado = 0"
                 + " and e.numeroDeTentativas < 3"
-                + " and e.mensagemDeErro is null");
+                + " and e.mensagemDeErro is null"
+                + " order by e.id asc");
         for (Object emailObject : query.getResultList()){
             emails.add((Email) emailObject);
         }

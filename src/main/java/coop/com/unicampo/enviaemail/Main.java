@@ -56,7 +56,7 @@ public class Main {
     private static String body;
 
     public static void main(String[] args) throws IOException {
-        
+
         Timer timer = null;
         if (timer == null) {
             timer = new Timer();
@@ -64,10 +64,10 @@ public class Main {
             tarefa = new TimerTask() {
 
                 @Override
-                public void run() {                    
-                    
+                public void run() {
+
                     List<Email> emails = new ArrayList<>();
-                    
+
                     em = EntityManagerDAO.getEntityManager();
                     emails.addAll(EmailController.getEmailsNotSend());
 
@@ -82,7 +82,15 @@ public class Main {
     }
 
     public static void enviaEmail(Integer id, Integer codigoConfiguracao) {
-
+        to = null;
+        cc = null;
+        cco = null;
+        anexo = null;
+        from = null;
+        password = null;
+        subject = null;
+        body = null;
+        
         try {
             log.info("Buscando Configurações.");
             Configuracoes config;
